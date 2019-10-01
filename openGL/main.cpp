@@ -161,7 +161,7 @@ int main(void)
 	//glm::mat4 Projection = glm::ortho(-10.0f,10.0f,-10.0f,10.0f,0.0f,100.0f); // In world coordinates
 
 	glm::mat4 View = glm::lookAt(
-		glm::vec3(0, 0, 10), // Camera is at (4,3,3), in World Space, 관측자의 위치
+		glm::vec3(0, 0, 15), // Camera is at (4,3,3), in World Space, 관측자의 위치
 		glm::vec3(0, 0, 0), // and looks at the origin, 어딜 보느냐-어느 물건을 중심으로 바라보는가
 		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
 	);
@@ -178,15 +178,21 @@ int main(void)
 		 1.0f, -1.0f, 0.0f,//오
 		 0.0f, -3.0f, 0.0f,//위
 		 
-		 -1.0f, -1.0f, 0.0f,
-		 0.0f, -3.0f, 0.0f,
-		 0.0f, -6.0f, 0.0f,
-
 		-1.0f, -1.0f, 0.0f,
+		0.0f, -3.0f, 0.0f,
+		-1.0f, -4.0f, 0.0f,
+
+		-1.0f, -4.0f, 0.0f,
+		0.0f, -3.0f, 0.0f,
 		0.0f, -6.0f, 0.0f,
-		-1.0f, -5.0f, 0.0f,
 
+		0.0f, -3.0f, 0.0f,
+		1.0f, -1.0f, 0.0f,
+		1.0f, -4.0f, 0.0f,
 
+		0.0f, -3.0f, 0.0f,
+		1.0f, -4.0f, 0.0f,
+		0.0f, -6.0f, 0.0f,
 	};
 
 	GLuint vertexbuffer;
