@@ -161,8 +161,8 @@ int main(void)
 	//glm::mat4 Projection = glm::ortho(-10.0f,10.0f,-10.0f,10.0f,0.0f,100.0f); // In world coordinates
 
 	glm::mat4 View = glm::lookAt(
-		glm::vec3(0, 0, 15), // Camera is at (4,3,3), in World Space, 관측자의 위치
-		glm::vec3(0, 0, 0), // and looks at the origin, 어딜 보느냐-어느 물건을 중심으로 바라보는가
+		glm::vec3(5, 5, 35), // Camera is at (4,3,3), in World Space, 관측자의 위치
+		glm::vec3(6, 0, 0), // and looks at the origin, 어딜 보느냐-어느 물건을 중심으로 바라보는가
 		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
 	);
 
@@ -170,29 +170,57 @@ int main(void)
 	glm::mat4 MVP = Projection * View * Model;
 
 	static const GLfloat g_vertex_buffer_data[] = {
-		-1.0f, -1.0f, 0.0f,//왼
-		 1.0f, -1.0f, 0.0f,//오
-		 0.0f,  1.0f, 0.0f,//위
-
-		-1.0f, -1.0f, 0.0f,//왼
-		 1.0f, -1.0f, 0.0f,//오
-		 0.0f, -3.0f, 0.0f,//위
-		 
+		1.0f, 1.0f, 0.0f,
+		-1.0f, 1.0f, 0.0f,
 		-1.0f, -1.0f, 0.0f,
-		0.0f, -3.0f, 0.0f,
-		-1.0f, -4.0f, 0.0f,
 
-		-1.0f, -4.0f, 0.0f,
-		0.0f, -3.0f, 0.0f,
-		0.0f, -6.0f, 0.0f,
+		1.0f, 1.0f, 0.0f,
+		-1.0f, -1.0f, 0.0f,
+		1.0f, -1.0f, 0.0f,//윗면
 
-		0.0f, -3.0f, 0.0f,
+		1.0f, 1.0f, -2.0f,
+		1.0f, -1.0f, -2.0f,
+		-1.0f, -1.0f, -2.0f,
+
+		1.0f, 1.0f, -2.0f,
+		-1.0f, 1.0f, -2.0f,
+		-1.0f, -1.0f, -2.0f,//아랫면
+
+		-1.0f, 1.0f, 0.0f,
+		1.0f, 1.0f, 0.0f,
+		-1.0f, 1.0f, -2.0f,
+
+		1.0f, 1.0f, 0.0f,
+		1.0f, 1.0f, -2.0f,
+		-1.0f, 1.0f, -2.0f,//뒷면
+
+		-1.0f, 1.0f, 0.0f,
+		-1.0f, -1.0f, 0.0f,
+		-1.0f, -1.0f, -2.0f,
+
+		-1.0f, 1.0f, 0.0f,
+		-1.0f, 1.0f, -2.0f,
+		-1.0f, -1.0f, -2.0f,//왼쪽옆면
+
+		1.0f, 1.0f, 0.0f,
 		1.0f, -1.0f, 0.0f,
-		1.0f, -4.0f, 0.0f,
+		1.0f, 1.0f, -2.0f,
 
-		0.0f, -3.0f, 0.0f,
-		1.0f, -4.0f, 0.0f,
-		0.0f, -6.0f, 0.0f,
+		1.0f, -1.0f, 0.0f,
+		1.0f, 1.0f, -2.0f,
+		1.0f, -1.0f, -2.0f,//오른쪽 옆면
+
+		-1.0f, 1.0f, 0.0f,
+		1.0f, -1.0f, 0.0f,
+		-1.0f, -1.0f, -2.0f,
+
+		1.0f, -1.0f, 0.0f,
+		-1.0f, -1.0f, -2.0f,
+		1.0f, -1.0f, -2.0f,//앞면
+
+
+
+
 	};
 
 	GLuint vertexbuffer;
@@ -200,11 +228,18 @@ int main(void)
 	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
 
+
 	do {
+
+		Model = glm::translate(Model, glm::vec3(0.f, 0.f, 0.5f));
+		Model = glm::rotate(Model, glm::radians(3.f), glm::vec3(0.f, 3.f, 0.f));
+		glm::mat4 MVP = Projection * View * Model;
 
 		glClear(GL_COLOR_BUFFER_BIT);
 		glUseProgram(programID);
 		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+
 
 		glEnableVertexAttribArray(0);
 		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
@@ -218,11 +253,11 @@ int main(void)
 		);
 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-
 		glDisableVertexAttribArray(0);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+
 
 	} while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0);
 
