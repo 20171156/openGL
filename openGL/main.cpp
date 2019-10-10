@@ -161,8 +161,8 @@ int main(void)
 	//glm::mat4 Projection = glm::ortho(-10.0f,10.0f,-10.0f,10.0f,0.0f,100.0f); // In world coordinates
 
 	glm::mat4 View = glm::lookAt(
-		glm::vec3(5, 5, 35), // Camera is at (4,3,3), in World Space, 관측자의 위치
-		glm::vec3(6, 0, 0), // and looks at the origin, 어딜 보느냐-어느 물건을 중심으로 바라보는가
+		glm::vec3(-10, 0, 10), // Camera is at (4,3,3), in World Space, 관측자의 위치
+		glm::vec3(0, 0, 0), // and looks at the origin, 어딜 보느냐-어느 물건을 중심으로 바라보는가
 		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
 	);
 
@@ -217,10 +217,6 @@ int main(void)
 		1.0f, -1.0f, 0.0f,
 		-1.0f, -1.0f, -2.0f,
 		1.0f, -1.0f, -2.0f,//앞면
-
-
-
-
 	};
 
 	GLuint vertexbuffer;
@@ -231,9 +227,11 @@ int main(void)
 
 	do {
 
-		Model = glm::translate(Model, glm::vec3(0.f, 0.f, 0.5f));
-		Model = glm::rotate(Model, glm::radians(3.f), glm::vec3(0.f, 3.f, 0.f));
-		glm::mat4 MVP = Projection * View * Model;
+		Model = glm::translate(Model, glm::vec3(0.1f, 0.f, 0.1f));//I = T * I
+		Model = glm::rotate(Model, glm::radians(1.f), glm::vec3(0.f, 3.f, 0.f));//I = R * T * I
+		glm::mat4 MVP = Projection * View * Model;//MVP행렬 = P * V * (R * T * I)
+		//이동할때 두가지 방법 1. 프레임 별 변화 - 2. 값을 누적시키는 식으로 / 이건 전자
+		//이동도 행렬도 없는 좌표를 카메라 가운데 기준점으로 잡고 이동시키는 것이 좋음
 
 		glClear(GL_COLOR_BUFFER_BIT);
 		glUseProgram(programID);
