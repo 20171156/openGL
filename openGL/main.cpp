@@ -183,12 +183,15 @@ int main(void)
 	);
 	// Model matrix : an identity matrix (model will be at the origin)
 	glm::mat4 Model = glm::mat4(1.0f);
+	glm::mat4 Model1 = glm::mat4(1.0f);
+
 	// Our ModelViewProjection : multiplication of our 3 matrices
 	glm::mat4 MVP = Projection * View * Model; // Remember, matrix multiplication is the other way around
+	glm::mat4 MVP1 = Projection * View * Model1;
 
 	// Our vertices. Tree consecutive floats give a 3D vertex; Three consecutive vertices give a triangle.
 	// A cube has 6 faces with 2 triangles each, so this makes 6*2=12 triangles, and 12*3 vertices
-	static const GLfloat g_vertex_buffer_data[] = {
+	static const GLfloat Sun[] = {
 		-1.0f,-1.0f,-1.0f,
 		-1.0f,-1.0f, 1.0f,
 		-1.0f, 1.0f, 1.0f,
@@ -225,6 +228,45 @@ int main(void)
 		 1.0f, 1.0f, 1.0f,
 		-1.0f, 1.0f, 1.0f,
 		 1.0f,-1.0f, 1.0f
+	};
+
+	static const GLfloat Moon[] = {
+		-1.0f+6.0f ,-1.0f,-1.0f,
+		-1.0f+6.0f ,-1.0f, 1.0f,
+		-1.0f+6.0f , 1.0f, 1.0f,
+		 1.0f+6.0f , 1.0f,-1.0f,
+		-1.0f+6.0f ,-1.0f,-1.0f,
+		-1.0f+6.0f , 1.0f,-1.0f,
+		 1.0f+6.0f ,-1.0f, 1.0f,
+		-1.0f+6.0f ,-1.0f,-1.0f,
+		 1.0f+6.0f ,-1.0f,-1.0f,
+		 1.0f+6.0f , 1.0f,-1.0f,
+		 1.0f+6.0f ,-1.0f,-1.0f,
+		-1.0f+6.0f ,-1.0f,-1.0f,
+		-1.0f+6.0f ,-1.0f,-1.0f,
+		-1.0f+6.0f , 1.0f, 1.0f,
+		-1.0f+6.0f , 1.0f,-1.0f,
+		 1.0f+6.0f ,-1.0f, 1.0f,
+		-1.0f+6.0f ,-1.0f, 1.0f,
+		-1.0f+6.0f ,-1.0f,-1.0f,
+		-1.0f+6.0f , 1.0f, 1.0f,
+		-1.0f+6.0f ,-1.0f, 1.0f,
+		 1.0f+6.0f ,-1.0f, 1.0f,
+		 1.0f+6.0f , 1.0f, 1.0f,
+		 1.0f+6.0f ,-1.0f,-1.0f,
+		 1.0f+6.0f , 1.0f,-1.0f,
+		 1.0f+6.0f ,-1.0f,-1.0f,
+		 1.0f+6.0f , 1.0f, 1.0f,
+		 1.0f+6.0f ,-1.0f, 1.0f,
+		 1.0f+6.0f , 1.0f, 1.0f,
+		 1.0f+6.0f , 1.0f,-1.0f,
+		-1.0f+6.0f , 1.0f,-1.0f,
+		 1.0f+6.0f , 1.0f, 1.0f,
+		-1.0f+6.0f , 1.0f,-1.0f,
+		-1.0f+6.0f , 1.0f, 1.0f,
+		 1.0f+6.0f , 1.0f, 1.0f,
+		-1.0f+6.0f , 1.0f, 1.0f,
+		 1.0f+6.0f ,-1.0f, 1.0f
 	};
 
 	// One color for each vertex. They were generated randomly.
@@ -267,21 +309,29 @@ int main(void)
 		0.982f,  0.099f,  0.879f
 	};
 
-	GLuint vertexbuffer;
-	glGenBuffers(1, &vertexbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+	GLuint Sun_vertexbuffer;
+	glGenBuffers(1, &Sun_vertexbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, Sun_vertexbuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Sun), Sun, GL_STATIC_DRAW);
 
 	GLuint colorbuffer;
 	glGenBuffers(1, &colorbuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(g_color_buffer_data), g_color_buffer_data, GL_STATIC_DRAW);
 
-	do {
+	GLuint Moon_vertexbuffer;
+	glGenBuffers(1, &Moon_vertexbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, Moon_vertexbuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Moon), Moon, GL_STATIC_DRAW);
 
+	do {
 		//Model = glm::translate(Model, glm::vec3(0.1f, 0.f, 0.1f));//I = T * I
 		Model = glm::rotate(Model, glm::radians(1.f), glm::vec3(0.f, 3.f, 0.f));//I = R * T * I
-		glm::mat4 MVP = Projection * View * Model;//MVP행렬 = P * V * (R * T * I)
+		MVP = Projection * View * Model;//MVP행렬 = P * V * (R * T * I)
+
+		//Model1 = glm::translate(Model1, glm::vec3(0.1f, 0.f, 0.1f));//I = T * I
+		Model1 = glm::rotate(Model1, glm::radians(1.f), glm::vec3(0.f, 3.f, 0.f));//I = R * T * I
+		MVP1 = Projection * View * Model1;//MVP행렬 = P * V * (R * T * I)
 
 
 		// Clear the screen
@@ -293,10 +343,12 @@ int main(void)
 		// Send our transformation to the currently bound shader, 
 		// in the "MVP" uniform
 		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
+		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP1[0][0]);
+
 
 		// 1rst attribute buffer : vertices
 		glEnableVertexAttribArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, Sun_vertexbuffer);
 		glVertexAttribPointer(
 			0,                  // attribute. No particular reason for 0, but must match the layout in the shader.
 			3,                  // size
@@ -321,6 +373,31 @@ int main(void)
 		// Draw the triangle !
 		glDrawArrays(GL_TRIANGLES, 0, 12 * 3); // 12*3 indices starting at 0 -> 12 triangles
 
+		glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, Moon_vertexbuffer);
+		glVertexAttribPointer(
+			0,                  // attribute. No particular reason for 0, but must match the layout in the shader.
+			3,                  // size
+			GL_FLOAT,           // type
+			GL_FALSE,           // normalized?
+			0,                  // stride
+			(void*)0            // array buffer offset
+		);
+
+		// 2nd attribute buffer : colors
+		glEnableVertexAttribArray(1);
+		glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
+		glVertexAttribPointer(
+			1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
+			3,                                // size
+			GL_FLOAT,                         // type
+			GL_FALSE,                         // normalized?
+			0,                                // stride
+			(void*)0                          // array buffer offset
+		);
+
+		glDrawArrays(GL_TRIANGLES, 0, 12 * 3); // 12*3 indices starting at 0 -> 12 triangles
+
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
 
@@ -333,8 +410,9 @@ int main(void)
 		glfwWindowShouldClose(window) == 0);
 
 	// Cleanup VBO and shader
-	glDeleteBuffers(1, &vertexbuffer);
+	glDeleteBuffers(1, &Sun_vertexbuffer);
 	glDeleteBuffers(1, &colorbuffer);
+	glDeleteBuffers(1, &Moon_vertexbuffer);
 	glDeleteProgram(programID);
 	glDeleteVertexArrays(1, &VertexArrayID);
 
