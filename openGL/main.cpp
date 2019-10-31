@@ -1,9 +1,4 @@
-//http://nehe.gamedev.net/tutorial/3d_shapes/10035/
-//https://javahome.tistory.com/category/OPENGL/OpenGL%20ES%20Tutorial
-
-
-
-
+//https://heinleinsgame.tistory.com/8
 // sample.cpp
 #include <stdio.h>
 #include <string>
@@ -26,6 +21,20 @@ GLFWwindow* window;
 
 using namespace glm;
 using namespace std;
+
+struct POINT3D {
+	float x;
+	float y;
+	float z;
+};
+POINT3D *vertex;
+
+struct FACE4D {
+	int v1;
+	int v2;
+	int v3;
+};
+FACE4D *face;
 
 GLuint LoadShaders(const char * vertex_file_path, const char * fragment_file_path) {
 
@@ -115,6 +124,17 @@ GLuint LoadShaders(const char * vertex_file_path, const char * fragment_file_pat
 	glDeleteShader(FragmentShaderID);
 
 	return ProgramID;
+}
+
+void FILE_Load(void)
+{
+	FILE *fp;
+	int NumVertex;
+
+	fp = fopen("cube.txt", "r");
+	fscanf(fp, "%d\n", &NumVertex);
+
+
 }
 
 int main(void)
