@@ -200,25 +200,17 @@ int main(void)
 	fopen_s(&Color_fp, "color.txt", "r");
 
 
-	if (Sun_fp == NULL)
-	{
-		fprintf(stdout, "파일을 열지 못했습니다.");
-		exit(1);
-	}
-
-	for (int i = 0; i < 36 * 3; ++i)
-	{
-		fscanf_s(Sun_fp, "%f", &Sun[i]);
-	}
+	//if (Sun_fp == NULL)
+	//{
+	//	fprintf(stdout, "파일을 열지 못했습니다.");
+	//	exit(1);
+	//}
 
 	for (int i = 0; i < 36 * 3; ++i)
 	{
 		fscanf_s(Moon_fp, "%f", &Moon[i]);
-	}
-
-	for (int i = 0; i < 36 * 3; ++i)
-	{
 		fscanf_s(Color_fp, "%f", &Color[i]);
+		fscanf_s(Sun_fp, "%f", &Sun[i]);
 	}
 
 	// Our vertices. Tree consecutive floats give a 3D vertex; Three consecutive vertices give a triangle.
