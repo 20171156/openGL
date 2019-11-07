@@ -1,5 +1,6 @@
-//https://heinleinsgame.tistory.com/8
-// sample.cpp
+// main.cpp
+#include <iostream>
+
 #include <stdio.h>
 #include <string>
 #include <vector>
@@ -8,10 +9,11 @@
 #include <algorithm>
 #include <sstream>
 #include <stdlib.h>
-#include "glm/gtc/matrix_transform.hpp"
+
 #include "include/GL/glew.h"		
 #include "include/GLFW/glfw3.h" 
 #include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 
 #pragma comment(lib, "OpenGL32.lib")
 #pragma comment(lib, "lib-vc2017/glew32.lib")
@@ -21,6 +23,103 @@ GLFWwindow* window;
 
 using namespace glm;
 using namespace std;
+
+#define FOURCC_DXT1 0x31545844 // Equivalent to "DXT1" in ASCII
+#define FOURCC_DXT3 0x33545844 // Equivalent to "DXT3" in ASCII
+#define FOURCC_DXT5 0x35545844 // Equivalent to "DXT5" in ASCII
+
+GLuint loadDDS(const char * imagepath) {
+
+	unsigned char header[124];
+
+	FILE *fp;
+
+	/* try to open the file */
+	fopen_s(&fp, imagepath, "rb");
+	if (fp == NULL) {
+		printf("%s could not be opened. Are you in the right directory ? Don't forget to read the FAQ !\n", imagepath); getchar();
+		return 0;
+	}
+
+	/* verify the type of file */
+	char filecode[4];
+	fread(filecode, 1, 4, fp);
+	if (strncmp(filecode, "DDS ", 4) != 0) {
+		fclose(fp);
+		return 0;
+	}
+
+	/* get the surface desc */
+	fread(&header, 124, 1, fp);
+
+	unsigned int height = *(unsigned int*)&(header[8]);
+	unsigned int width = *(unsigned int*)&(header[12]);
+	unsigned int linearSize = *(unsigned int*)&(header[16]);
+	unsigned int mipMapCount = *(unsigned int*)&(header[24]);
+	unsigned int fourCC = *(unsigned int*)&(header[80]);
+
+
+	unsigned char * buffer;
+	unsigned int bufsize;
+	/* how big is it going to be including all mipmaps? */
+	bufsize = mipMapCount > 1 ? linearSize * 2 : linearSize;
+	buffer = (unsigned char*)malloc(bufsize * sizeof(unsigned char));
+	fread(buffer, 1, bufsize, fp);
+	/* close the file pointer */
+	fclose(fp);
+
+	unsigned int components = (fourCC == FOURCC_DXT1) ? 3 : 4;
+	unsigned int format;
+	switch (fourCC)
+	{
+	case FOURCC_DXT1:
+		format = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+		break;
+	case FOURCC_DXT3:
+		format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+		break;
+	case FOURCC_DXT5:
+		format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+		break;
+	default:
+		free(buffer);
+		return 0;
+	}
+
+	// Create one OpenGL texture
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+
+	// "Bind" the newly created texture : all future texture functions will modify this texture
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+	unsigned int blockSize = (format == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT) ? 8 : 16;
+	unsigned int offset = 0;
+
+	/* load the mipmaps */
+	for (unsigned int level = 0; level < mipMapCount && (width || height); ++level)
+	{
+		unsigned int size = ((width + 3) / 4)*((height + 3) / 4)*blockSize;
+		glCompressedTexImage2D(GL_TEXTURE_2D, level, format, width, height,
+			0, size, buffer + offset);
+
+		offset += size;
+		width /= 2;
+		height /= 2;
+
+		// Deal with Non-Power-Of-Two textures. This code is not included in the webpage to reduce clutter.
+		if (width < 1) width = 1;
+		if (height < 1) height = 1;
+
+	}
+
+	free(buffer);
+
+	return textureID;
+
+
+}
 
 GLuint LoadShaders(const char * vertex_file_path, const char * fragment_file_path) {
 
@@ -112,15 +211,12 @@ GLuint LoadShaders(const char * vertex_file_path, const char * fragment_file_pat
 	return ProgramID;
 }
 
-
-
 int main(void)
 {
 	// Initialise GLFW
 	if (!glfwInit())
 	{
 		fprintf(stderr, "Failed to initialize GLFW\n");
-		getchar();
 		return -1;
 	}
 
@@ -131,10 +227,9 @@ int main(void)
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Open a window and create its OpenGL context
-	window = glfwCreateWindow(1024, 768, "Tutorial 04 - Colored Cube", NULL, NULL);
+	window = glfwCreateWindow(1024, 768, "Tutorial 05 - Textured Cube", NULL, NULL);
 	if (window == NULL) {
 		fprintf(stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n");
-		getchar();
 		glfwTerminate();
 		return -1;
 	}
@@ -144,8 +239,6 @@ int main(void)
 	glewExperimental = true; // Needed for core profile
 	if (glewInit() != GLEW_OK) {
 		fprintf(stderr, "Failed to initialize GLEW\n");
-		getchar();
-		glfwTerminate();
 		return -1;
 	}
 
@@ -174,189 +267,132 @@ int main(void)
 	glm::mat4 Projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
 	// Camera matrix
 	glm::mat4 View = glm::lookAt(
-		glm::vec3(4, 0, -20), // Camera is at (4,3,-3), in World Space
+		glm::vec3(4, 3, 3), // Camera is at (4,3,3), in World Space
 		glm::vec3(0, 0, 0), // and looks at the origin
 		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
 	);
 	// Model matrix : an identity matrix (model will be at the origin)
 	glm::mat4 Model = glm::mat4(1.0f);
-	glm::mat4 Model1 = glm::mat4(1.0f);
-
 	// Our ModelViewProjection : multiplication of our 3 matrices
 	glm::mat4 MVP = Projection * View * Model; // Remember, matrix multiplication is the other way around
-	glm::mat4 MVP1 = Projection * View * Model1;
 
+	// Load the texture using any two methods
+	//GLuint Texture = loadBMP_custom("uvtemplate.bmp");
+	GLuint Texture = loadDDS("uvtemplate.DDS");
 
-	FILE* Sun_fp;
-	FILE* Moon_fp;
-	FILE* Color_fp;
+	// Get a handle for our "myTextureSampler" uniform
+	GLuint TextureID = glGetUniformLocation(programID, "myTextureSampler");
 
-	GLfloat Sun[36 * 3] = { 0 };
-	GLfloat Moon[36 * 3] = { 0 };
-	GLfloat Color[36 * 3] = { 0 };
+	FILE* Cube_fp;
 
-	fopen_s(&Sun_fp, "sun.txt", "r");
-	fopen_s(&Moon_fp, "moon.txt", "r");
-	fopen_s(&Color_fp, "color.txt", "r");
+	GLfloat g_vertex_buffer_data[36 * 3] = { 0 };
+	GLfloat g_uv_buffer_data[36 * 3] = { 0 };
 
+	fopen_s(&Cube_fp, "texture_test.txt", "r");
 
-	//if (Sun_fp == NULL)
-	//{
-	//	fprintf(stdout, "파일을 열지 못했습니다.");
-	//	exit(1);
-	//}
-
-	for (int i = 0; i < 36 * 3; ++i)
+	for (int i = 0; i < 36 * 3; ++i)//위치정보
 	{
-		fscanf_s(Moon_fp, "%f", &Moon[i]);
-		fscanf_s(Color_fp, "%f", &Color[i]);
-		fscanf_s(Sun_fp, "%f", &Sun[i]);
+		fscanf_s(Cube_fp, "%f", &g_vertex_buffer_data[i]);
 	}
+
+	for (int i = 0; i < 36 * 2; ++i)//uv정점 정보
+	{
+		fscanf_s(Cube_fp, "%f", &g_uv_buffer_data[i]);
+	}
+
 
 	// Our vertices. Tree consecutive floats give a 3D vertex; Three consecutive vertices give a triangle.
 	// A cube has 6 faces with 2 triangles each, so this makes 6*2=12 triangles, and 12*3 vertices
-	//static const GLfloat Sun[] = {
-	//	-1.0f,-1.0f,-1.0f,
-	//	-1.0f,-1.0f, 1.0f,
-	//	-1.0f, 1.0f, 1.0f,
-	//	 1.0f, 1.0f,-1.0f,
-	//	-1.0f,-1.0f,-1.0f,
-	//	-1.0f, 1.0f,-1.0f,
-	//	 1.0f,-1.0f, 1.0f,
-	//	-1.0f,-1.0f,-1.0f,
-	//	 1.0f,-1.0f,-1.0f,
-	//	 1.0f, 1.0f,-1.0f,
-	//	 1.0f,-1.0f,-1.0f,
-	//	-1.0f,-1.0f,-1.0f,
-	//	-1.0f,-1.0f,-1.0f,
-	//	-1.0f, 1.0f, 1.0f,
-	//	-1.0f, 1.0f,-1.0f,
-	//	 1.0f,-1.0f, 1.0f,
-	//	-1.0f,-1.0f, 1.0f,
-	//	-1.0f,-1.0f,-1.0f,
-	//	-1.0f, 1.0f, 1.0f,
-	//	-1.0f,-1.0f, 1.0f,
-	//	 1.0f,-1.0f, 1.0f,
-	//	 1.0f, 1.0f, 1.0f,
-	//	 1.0f,-1.0f,-1.0f,
-	//	 1.0f, 1.0f,-1.0f,
-	//	 1.0f,-1.0f,-1.0f,
-	//	 1.0f, 1.0f, 1.0f,
-	//	 1.0f,-1.0f, 1.0f,
-	//	 1.0f, 1.0f, 1.0f,
-	//	 1.0f, 1.0f,-1.0f,
-	//	-1.0f, 1.0f,-1.0f,
-	//	 1.0f, 1.0f, 1.0f,
-	//	-1.0f, 1.0f,-1.0f,
-	//	-1.0f, 1.0f, 1.0f,
-	//	 1.0f, 1.0f, 1.0f,
-	//	-1.0f, 1.0f, 1.0f,
-	//	 1.0f,-1.0f, 1.0f
-	//};
+	static const GLfloat g_vertex_buffer_data[] = {
+		-1.0f,-1.0f,-1.0f,
+		-1.0f,-1.0f, 1.0f,
+		-1.0f, 1.0f, 1.0f,
+		 1.0f, 1.0f,-1.0f,
+		-1.0f,-1.0f,-1.0f,
+		-1.0f, 1.0f,-1.0f,
+		 1.0f,-1.0f, 1.0f,
+		-1.0f,-1.0f,-1.0f,
+		 1.0f,-1.0f,-1.0f,
+		 1.0f, 1.0f,-1.0f,
+		 1.0f,-1.0f,-1.0f,
+		-1.0f,-1.0f,-1.0f,
+		-1.0f,-1.0f,-1.0f,
+		-1.0f, 1.0f, 1.0f,
+		-1.0f, 1.0f,-1.0f,
+		 1.0f,-1.0f, 1.0f,
+		-1.0f,-1.0f, 1.0f,
+		-1.0f,-1.0f,-1.0f,
+		-1.0f, 1.0f, 1.0f,
+		-1.0f,-1.0f, 1.0f,
+		 1.0f,-1.0f, 1.0f,
+		 1.0f, 1.0f, 1.0f,
+		 1.0f,-1.0f,-1.0f,
+		 1.0f, 1.0f,-1.0f,
+		 1.0f,-1.0f,-1.0f,
+		 1.0f, 1.0f, 1.0f,
+		 1.0f,-1.0f, 1.0f,
+		 1.0f, 1.0f, 1.0f,
+		 1.0f, 1.0f,-1.0f,
+		-1.0f, 1.0f,-1.0f,
+		 1.0f, 1.0f, 1.0f,
+		-1.0f, 1.0f,-1.0f,
+		-1.0f, 1.0f, 1.0f,
+		 1.0f, 1.0f, 1.0f,
+		-1.0f, 1.0f, 1.0f,
+		 1.0f,-1.0f, 1.0f
+	};
 
-	//static const GLfloat Moon[] = {
-	//	5.0f ,-1.0f,-1.0f,
-	//	5.0f ,-1.0f, 1.0f,
-	//	5.0f , 1.0f, 1.0f,
-	//	7.0f , 1.0f,-1.0f,
-	//	5.0f ,-1.0f,-1.0f,
-	//	5.0f , 1.0f,-1.0f,
-	//	7.0f ,-1.0f, 1.0f,
-	//	5.0f ,-1.0f,-1.0f,
-	//	7.0f ,-1.0f,-1.0f,
-	//	7.0f , 1.0f,-1.0f,
-	//	7.0f ,-1.0f,-1.0f,
-	//	5.0f ,-1.0f,-1.0f,
-	//	5.0f ,-1.0f,-1.0f,
-	//	5.0f , 1.0f, 1.0f,
-	//	5.0f , 1.0f,-1.0f,
-	//	7.0f ,-1.0f, 1.0f,
-	//	5.0f ,-1.0f, 1.0f,
-	//	5.0f ,-1.0f,-1.0f,
-	//	5.0f , 1.0f, 1.0f,
-	//	5.0f ,-1.0f, 1.0f,
-	//	7.0f ,-1.0f, 1.0f,
-	//	7.0f , 1.0f, 1.0f,
-	//	7.0f ,-1.0f,-1.0f,
-	//	7.0f , 1.0f,-1.0f,
-	//	7.0f ,-1.0f,-1.0f,
-	//	7.0f , 1.0f, 1.0f,
-	//	7.0f ,-1.0f, 1.0f,
-	//	7.0f , 1.0f, 1.0f,
-	//	7.0f , 1.0f,-1.0f,
-	//	5.0f , 1.0f,-1.0f,
-	//	7.0f , 1.0f, 1.0f,
-	//	5.0f , 1.0f,-1.0f,
-	//	5.0f , 1.0f, 1.0f,
-	//	7.0f , 1.0f, 1.0f,
-	//	5.0f , 1.0f, 1.0f,
-	//	7.0f ,-1.0f, 1.0f
-	//};
+	// Two UV coordinatesfor each vertex. They were created with Blender.
+	static const GLfloat g_uv_buffer_data[] = {
+		0.000059f, 1.0f - 0.000004f,
+		0.000103f, 1.0f - 0.336048f,
+		0.335973f, 1.0f - 0.335903f,
+		1.000023f, 1.0f - 0.000013f,
+		0.667979f, 1.0f - 0.335851f,
+		0.999958f, 1.0f - 0.336064f,
+		0.667979f, 1.0f - 0.335851f,
+		0.336024f, 1.0f - 0.671877f,
+		0.667969f, 1.0f - 0.671889f,
+		1.000023f, 1.0f - 0.000013f,
+		0.668104f, 1.0f - 0.000013f,
+		0.667979f, 1.0f - 0.335851f,
+		0.000059f, 1.0f - 0.000004f,
+		0.335973f, 1.0f - 0.335903f,
+		0.336098f, 1.0f - 0.000071f,
+		0.667979f, 1.0f - 0.335851f,
+		0.335973f, 1.0f - 0.335903f,
+		0.336024f, 1.0f - 0.671877f,
+		1.000004f, 1.0f - 0.671847f,
+		0.999958f, 1.0f - 0.336064f,
+		0.667979f, 1.0f - 0.335851f,
+		0.668104f, 1.0f - 0.000013f,
+		0.335973f, 1.0f - 0.335903f,
+		0.667979f, 1.0f - 0.335851f,
+		0.335973f, 1.0f - 0.335903f,
+		0.668104f, 1.0f - 0.000013f,
+		0.336098f, 1.0f - 0.000071f,
+		0.000103f, 1.0f - 0.336048f,
+		0.000004f, 1.0f - 0.671870f,
+		0.336024f, 1.0f - 0.671877f,
+		0.000103f, 1.0f - 0.336048f,
+		0.336024f, 1.0f - 0.671877f,
+		0.335973f, 1.0f - 0.335903f,
+		0.667969f, 1.0f - 0.671889f,
+		1.000004f, 1.0f - 0.671847f,
+		0.667979f, 1.0f - 0.335851f
+	};
 
-	// One color for each vertex. They were generated randomly.
-	//static const GLfloat Color[] = {
-	//	0.583f,  0.771f,  0.014f,
-	//	0.609f,  0.115f,  0.436f,
-	//	0.327f,  0.483f,  0.844f,
-	//	0.822f,  0.569f,  0.201f,
-	//	0.435f,  0.602f,  0.223f,
-	//	0.310f,  0.747f,  0.185f,
-	//	0.597f,  0.770f,  0.761f,
-	//	0.559f,  0.436f,  0.730f,
-	//	0.359f,  0.583f,  0.152f,
-	//	0.483f,  0.596f,  0.789f,
-	//	0.559f,  0.861f,  0.639f,
-	//	0.195f,  0.548f,  0.859f,
-	//	0.014f,  0.184f,  0.576f,
-	//	0.771f,  0.328f,  0.970f,
-	//	0.406f,  0.615f,  0.116f,
-	//	0.676f,  0.977f,  0.133f,
-	//	0.971f,  0.572f,  0.833f,
-	//	0.140f,  0.616f,  0.489f,
-	//	0.997f,  0.513f,  0.064f,
-	//	0.945f,  0.719f,  0.592f,
-	//	0.543f,  0.021f,  0.978f,
-	//	0.279f,  0.317f,  0.505f,
-	//	0.167f,  0.620f,  0.077f,
-	//	0.347f,  0.857f,  0.137f,
-	//	0.055f,  0.953f,  0.042f,
-	//	0.714f,  0.505f,  0.345f,
-	//	0.783f,  0.290f,  0.734f,
-	//	0.722f,  0.645f,  0.174f,
-	//	0.302f,  0.455f,  0.848f,
-	//	0.225f,  0.587f,  0.040f,
-	//	0.517f,  0.713f,  0.338f,
-	//	0.053f,  0.959f,  0.120f,
-	//	0.393f,  0.621f,  0.362f,
-	//	0.673f,  0.211f,  0.457f,
-	//	0.820f,  0.883f,  0.371f,
-	//	0.982f,  0.099f,  0.879f
-	//};
+	GLuint vertexbuffer;
+	glGenBuffers(1, &vertexbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
 
-	GLuint Sun_vertexbuffer;
-	glGenBuffers(1, &Sun_vertexbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, Sun_vertexbuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Sun), Sun, GL_STATIC_DRAW);
-
-	GLuint colorbuffer;
-	glGenBuffers(1, &colorbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Color), Color, GL_STATIC_DRAW);
-
-	GLuint Moon_vertexbuffer;
-	glGenBuffers(1, &Moon_vertexbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, Moon_vertexbuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Moon), Moon, GL_STATIC_DRAW);
+	GLuint uvbuffer;
+	glGenBuffers(1, &uvbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(g_uv_buffer_data), g_uv_buffer_data, GL_STATIC_DRAW);
 
 	do {
-		//Model = glm::translate(Model, glm::vec3(0.1f, 0.f, 0.1f));//I = T * I
-		Model = glm::rotate(Model, glm::radians(1.f), glm::vec3(0.f, 3.f, 0.f));//I = R * T * I
-		MVP = Projection * View * Model;//MVP행렬 = P * V * (R * T * I)
-
-		//Model1 = glm::translate(Model1, glm::vec3(0.1f, 0.f, 0.1f));//I = T * I
-		Model1 = glm::rotate(Model1, glm::radians(1.f), glm::vec3(0.f, 3.f, 0.f));//I = R * T * I
-		MVP1 = Projection * View * Model1;//MVP행렬 = P * V * (R * T * I)
-
 
 		// Clear the screen
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -367,12 +403,16 @@ int main(void)
 		// Send our transformation to the currently bound shader, 
 		// in the "MVP" uniform
 		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP1[0][0]);
 
+		// Bind our texture in Texture Unit 0
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, Texture);
+		// Set our "myTextureSampler" sampler to use Texture Unit 0
+		glUniform1i(TextureID, 0);
 
 		// 1rst attribute buffer : vertices
 		glEnableVertexAttribArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, Sun_vertexbuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
 		glVertexAttribPointer(
 			0,                  // attribute. No particular reason for 0, but must match the layout in the shader.
 			3,                  // size
@@ -382,12 +422,12 @@ int main(void)
 			(void*)0            // array buffer offset
 		);
 
-		// 2nd attribute buffer : colors
+		// 2nd attribute buffer : UVs
 		glEnableVertexAttribArray(1);
-		glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
 		glVertexAttribPointer(
 			1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
-			3,                                // size
+			2,                                // size : U+V => 2
 			GL_FLOAT,                         // type
 			GL_FALSE,                         // normalized?
 			0,                                // stride
@@ -395,31 +435,6 @@ int main(void)
 		);
 
 		// Draw the triangle !
-		glDrawArrays(GL_TRIANGLES, 0, 12 * 3); // 12*3 indices starting at 0 -> 12 triangles
-
-		glEnableVertexAttribArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, Moon_vertexbuffer);
-		glVertexAttribPointer(
-			0,                  // attribute. No particular reason for 0, but must match the layout in the shader.
-			3,                  // size
-			GL_FLOAT,           // type
-			GL_FALSE,           // normalized?
-			0,                  // stride
-			(void*)0            // array buffer offset
-		);
-
-		// 2nd attribute buffer : colors
-		glEnableVertexAttribArray(1);
-		glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-		glVertexAttribPointer(
-			1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
-			3,                                // size
-			GL_FLOAT,                         // type
-			GL_FALSE,                         // normalized?
-			0,                                // stride
-			(void*)0                          // array buffer offset
-		);
-
 		glDrawArrays(GL_TRIANGLES, 0, 12 * 3); // 12*3 indices starting at 0 -> 12 triangles
 
 		glDisableVertexAttribArray(0);
@@ -434,10 +449,10 @@ int main(void)
 		glfwWindowShouldClose(window) == 0);
 
 	// Cleanup VBO and shader
-	glDeleteBuffers(1, &Sun_vertexbuffer);
-	glDeleteBuffers(1, &colorbuffer);
-	glDeleteBuffers(1, &Moon_vertexbuffer);
+	glDeleteBuffers(1, &vertexbuffer);
+	glDeleteBuffers(1, &uvbuffer);
 	glDeleteProgram(programID);
+	glDeleteTextures(1, &Texture);
 	glDeleteVertexArrays(1, &VertexArrayID);
 
 	// Close OpenGL window and terminate GLFW
