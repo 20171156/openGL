@@ -1,6 +1,4 @@
 // main.cpp
-#include <iostream>
-
 #include <stdio.h>
 #include <string>
 #include <vector>
@@ -9,11 +7,14 @@
 #include <algorithm>
 #include <sstream>
 #include <stdlib.h>
+#include <random>
+#include <time.h>
 
 #include "include/GL/glew.h"		
 #include "include/GLFW/glfw3.h" 
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+
 
 #pragma comment(lib, "OpenGL32.lib")
 #pragma comment(lib, "lib-vc2017/glew32.lib")
@@ -24,6 +25,8 @@ GLFWwindow* window;
 using namespace glm;
 using namespace std;
 
+
+#define BUFFER_DATA 1000
 #define FOURCC_DXT1 0x31545844 // Equivalent to "DXT1" in ASCII
 #define FOURCC_DXT3 0x33545844 // Equivalent to "DXT3" in ASCII
 #define FOURCC_DXT5 0x35545844 // Equivalent to "DXT5" in ASCII
@@ -211,6 +214,29 @@ GLuint LoadShaders(const char * vertex_file_path, const char * fragment_file_pat
 	return ProgramID;
 }
 
+GLfloat* GetRandomUVBuffer(GLfloat* uvBuffer, const int size)
+{
+	// 매개변수로 받아온 배열의 순서를 랜덤하게 바꿔서 반환해준다.
+	GLfloat randomUVBuffer[BUFFER_DATA] = { 0 };
+
+	srand(time(NULL));
+
+	int i = 0;
+	while (i < size)
+	{
+		int targetIndex = rand() % size;
+		if (randomUVBuffer[targetIndex] != 0)
+		{
+			continue;
+		}
+
+		randomUVBuffer[targetIndex] = uvBuffer[i];
+		++i;
+	}
+
+	return randomUVBuffer;
+}
+
 int main(void)
 {
 	// Initialise GLFW
@@ -276,111 +302,132 @@ int main(void)
 	// Our ModelViewProjection : multiplication of our 3 matrices
 	glm::mat4 MVP = Projection * View * Model; // Remember, matrix multiplication is the other way around
 
+
+	int count = 0;
+	string file_dds;
+
+	GLfloat g_uv_buffer_data[BUFFER_DATA] = { 0 };
+	GLfloat g_vertex_buffer_data[BUFFER_DATA] = { 0 };
+
+	std::ifstream read_file;
+	read_file.open("texture_test.txt");
+
+	
+	getline(read_file, file_dds);
+
 	// Load the texture using any two methods
-	//GLuint Texture = loadBMP_custom("uvtemplate.bmp");
-	GLuint Texture = loadDDS("uvtemplate.DDS");
+//GLuint Texture = loadBMP_custom("uvtemplate.bmp");
+	GLuint Texture = loadDDS(file_dds.c_str());
+	cout << "텍스쳐이름 : " << file_dds << endl;
 
 	// Get a handle for our "myTextureSampler" uniform
 	GLuint TextureID = glGetUniformLocation(programID, "myTextureSampler");
 
-	FILE* Cube_fp;
-
-	GLfloat g_vertex_buffer_data[36 * 3] = { 0 };
-	GLfloat g_uv_buffer_data[36 * 3] = { 0 };
-
-	fopen_s(&Cube_fp, "texture_test.txt", "r");
-
-	for (int i = 0; i < 36 * 3; ++i)//위치정보
+	if (read_file.fail() == true)
 	{
-		fscanf_s(Cube_fp, "%f", &g_vertex_buffer_data[i]);
+		perror("texture_test.txt를 읽어오지 못했습니다.");
+		exit(EXIT_FAILURE);
 	}
 
-	for (int i = 0; i < 36 * 2; ++i)//uv정점 정보
+	read_file >> count;//제일 처음에 입력받은 값을 count로 돌리기
+
+	cout << "정점 위치 개수: " << count << endl;
+
+	for (int i = 0; i < count; ++i)
 	{
-		fscanf_s(Cube_fp, "%f", &g_uv_buffer_data[i]);
+		read_file >> g_vertex_buffer_data[i];
 	}
 
+	read_file >> count;
+	cout << "텍스쳐 정점 개수: " << count << endl;
+
+	for (int i = 0; i < count; ++i)
+	{
+		read_file >> g_uv_buffer_data[i];
+	}
+
+	read_file.close();//열고있는 파일 닫음
 
 	// Our vertices. Tree consecutive floats give a 3D vertex; Three consecutive vertices give a triangle.
 	// A cube has 6 faces with 2 triangles each, so this makes 6*2=12 triangles, and 12*3 vertices
-	static const GLfloat g_vertex_buffer_data[] = {
-		-1.0f,-1.0f,-1.0f,
-		-1.0f,-1.0f, 1.0f,
-		-1.0f, 1.0f, 1.0f,
-		 1.0f, 1.0f,-1.0f,
-		-1.0f,-1.0f,-1.0f,
-		-1.0f, 1.0f,-1.0f,
-		 1.0f,-1.0f, 1.0f,
-		-1.0f,-1.0f,-1.0f,
-		 1.0f,-1.0f,-1.0f,
-		 1.0f, 1.0f,-1.0f,
-		 1.0f,-1.0f,-1.0f,
-		-1.0f,-1.0f,-1.0f,
-		-1.0f,-1.0f,-1.0f,
-		-1.0f, 1.0f, 1.0f,
-		-1.0f, 1.0f,-1.0f,
-		 1.0f,-1.0f, 1.0f,
-		-1.0f,-1.0f, 1.0f,
-		-1.0f,-1.0f,-1.0f,
-		-1.0f, 1.0f, 1.0f,
-		-1.0f,-1.0f, 1.0f,
-		 1.0f,-1.0f, 1.0f,
-		 1.0f, 1.0f, 1.0f,
-		 1.0f,-1.0f,-1.0f,
-		 1.0f, 1.0f,-1.0f,
-		 1.0f,-1.0f,-1.0f,
-		 1.0f, 1.0f, 1.0f,
-		 1.0f,-1.0f, 1.0f,
-		 1.0f, 1.0f, 1.0f,
-		 1.0f, 1.0f,-1.0f,
-		-1.0f, 1.0f,-1.0f,
-		 1.0f, 1.0f, 1.0f,
-		-1.0f, 1.0f,-1.0f,
-		-1.0f, 1.0f, 1.0f,
-		 1.0f, 1.0f, 1.0f,
-		-1.0f, 1.0f, 1.0f,
-		 1.0f,-1.0f, 1.0f
-	};
+	//static const GLfloat g_vertex_buffer_data[] = {
+	//	-1.0f, -1.0f, -1.0f,
+	//	-1.0f, -1.0f,  1.0f,
+	//	-1.0f,  1.0f,  1.0f,
+	//	 1.0f,  1.0f, -1.0f,
+	//	-1.0f, -1.0f, -1.0f,
+	//	-1.0f,  1.0f, -1.0f,
+	//	 1.0f, -1.0f,  1.0f,
+	//	-1.0f, -1.0f, -1.0f,
+	//	 1.0f, -1.0f, -1.0f,
+	//	 1.0f,  1.0f, -1.0f,
+	//	 1.0f, -1.0f, -1.0f,
+	//	-1.0f, -1.0f, -1.0f,
+	//	-1.0f, -1.0f, -1.0f,
+	//	-1.0f,  1.0f,  1.0f,
+	//	-1.0f,  1.0f, -1.0f,
+	//	 1.0f, -1.0f,  1.0f,
+	//	-1.0f, -1.0f,  1.0f,
+	//	-1.0f, -1.0f, -1.0f,
+	//	-1.0f,  1.0f,  1.0f,
+	//	-1.0f, -1.0f,  1.0f,
+	//	 1.0f, -1.0f,  1.0f,
+	//	 1.0f,  1.0f,  1.0f,
+	//	 1.0f, -1.0f, -1.0f,
+	//	 1.0f,  1.0f, -1.0f,
+	//	 1.0f, -1.0f, -1.0f,
+	//	 1.0f,  1.0f,  1.0f,
+	//	 1.0f, -1.0f,  1.0f,
+	//	 1.0f,  1.0f,  1.0f,
+	//	 1.0f,  1.0f, -1.0f,
+	//	-1.0f,  1.0f, -1.0f,
+	//	 1.0f,  1.0f,  1.0f,
+	//	-1.0f,  1.0f, -1.0f,
+	//	-1.0f,  1.0f,  1.0f,
+	//	 1.0f,  1.0f,  1.0f,
+	//	-1.0f,  1.0f,  1.0f,
+	//	 1.0f, -1.0f,  1.0f,
+	//};
 
-	// Two UV coordinatesfor each vertex. They were created with Blender.
-	static const GLfloat g_uv_buffer_data[] = {
-		0.000059f, 1.0f - 0.000004f,
-		0.000103f, 1.0f - 0.336048f,
-		0.335973f, 1.0f - 0.335903f,
-		1.000023f, 1.0f - 0.000013f,
-		0.667979f, 1.0f - 0.335851f,
-		0.999958f, 1.0f - 0.336064f,
-		0.667979f, 1.0f - 0.335851f,
-		0.336024f, 1.0f - 0.671877f,
-		0.667969f, 1.0f - 0.671889f,
-		1.000023f, 1.0f - 0.000013f,
-		0.668104f, 1.0f - 0.000013f,
-		0.667979f, 1.0f - 0.335851f,
-		0.000059f, 1.0f - 0.000004f,
-		0.335973f, 1.0f - 0.335903f,
-		0.336098f, 1.0f - 0.000071f,
-		0.667979f, 1.0f - 0.335851f,
-		0.335973f, 1.0f - 0.335903f,
-		0.336024f, 1.0f - 0.671877f,
-		1.000004f, 1.0f - 0.671847f,
-		0.999958f, 1.0f - 0.336064f,
-		0.667979f, 1.0f - 0.335851f,
-		0.668104f, 1.0f - 0.000013f,
-		0.335973f, 1.0f - 0.335903f,
-		0.667979f, 1.0f - 0.335851f,
-		0.335973f, 1.0f - 0.335903f,
-		0.668104f, 1.0f - 0.000013f,
-		0.336098f, 1.0f - 0.000071f,
-		0.000103f, 1.0f - 0.336048f,
-		0.000004f, 1.0f - 0.671870f,
-		0.336024f, 1.0f - 0.671877f,
-		0.000103f, 1.0f - 0.336048f,
-		0.336024f, 1.0f - 0.671877f,
-		0.335973f, 1.0f - 0.335903f,
-		0.667969f, 1.0f - 0.671889f,
-		1.000004f, 1.0f - 0.671847f,
-		0.667979f, 1.0f - 0.335851f
-	};
+	//// Two UV coordinatesfor each vertex. They were created with Blender.
+	//static const GLfloat g_uv_buffer_data[] = {
+	//	0.000059f, 1.0f - 0.000004f,
+	//	0.000103f, 1.0f - 0.336048f,
+	//	0.335973f, 1.0f - 0.335903f,
+	//	1.000023f, 1.0f - 0.000013f,
+	//	0.667979f, 1.0f - 0.335851f,
+	//	0.999958f, 1.0f - 0.336064f,
+	//	0.667979f, 1.0f - 0.335851f,
+	//	0.336024f, 1.0f - 0.671877f,
+	//	0.667969f, 1.0f - 0.671889f,
+	//	1.000023f, 1.0f - 0.000013f,
+	//	0.668104f, 1.0f - 0.000013f,
+	//	0.667979f, 1.0f - 0.335851f,
+	//	0.000059f, 1.0f - 0.000004f,
+	//	0.335973f, 1.0f - 0.335903f,
+	//	0.336098f, 1.0f - 0.000071f,
+	//	0.667979f, 1.0f - 0.335851f,
+	//	0.335973f, 1.0f - 0.335903f,
+	//	0.336024f, 1.0f - 0.671877f,
+	//	1.000004f, 1.0f - 0.671847f,
+	//	0.999958f, 1.0f - 0.336064f,
+	//	0.667979f, 1.0f - 0.335851f,
+	//	0.668104f, 1.0f - 0.000013f,
+	//	0.335973f, 1.0f - 0.335903f,
+	//	0.667979f, 1.0f - 0.335851f,
+	//	0.335973f, 1.0f - 0.335903f,
+	//	0.668104f, 1.0f - 0.000013f,
+	//	0.336098f, 1.0f - 0.000071f,
+	//	0.000103f, 1.0f - 0.336048f,
+	//	0.000004f, 1.0f - 0.671870f,
+	//	0.336024f, 1.0f - 0.671877f,
+	//	0.000103f, 1.0f - 0.336048f,
+	//	0.336024f, 1.0f - 0.671877f,
+	//	0.335973f, 1.0f - 0.335903f,
+	//	0.667969f, 1.0f - 0.671889f,
+	//	1.000004f, 1.0f - 0.671847f,
+	//	0.667979f, 1.0f - 0.335851f
+	//};
 
 	GLuint vertexbuffer;
 	glGenBuffers(1, &vertexbuffer);
@@ -388,11 +435,16 @@ int main(void)
 	glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
 
 	GLuint uvbuffer;
-	glGenBuffers(1, &uvbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(g_uv_buffer_data), g_uv_buffer_data, GL_STATIC_DRAW);
 
 	do {
+		//glGenBuffers(1, &uvbuffer);
+		//glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+		//glBufferData(GL_ARRAY_BUFFER, sizeof(g_uv_buffer_data), g_uv_buffer_data, GL_STATIC_DRAW);
+
+		GLfloat* randomUVBufferData = GetRandomUVBuffer(g_uv_buffer_data, count);
+		glGenBuffers(1, &uvbuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(g_uv_buffer_data), randomUVBufferData, GL_STATIC_DRAW);
 
 		// Clear the screen
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -454,6 +506,8 @@ int main(void)
 	glDeleteProgram(programID);
 	glDeleteTextures(1, &Texture);
 	glDeleteVertexArrays(1, &VertexArrayID);
+
+
 
 	// Close OpenGL window and terminate GLFW
 	glfwTerminate();
