@@ -237,6 +237,7 @@ GLfloat* GetRandomUVBuffer(GLfloat* uvBuffer, const int size)
 	return randomUVBuffer;
 }
 
+
 int main(void)
 {
 	// Initialise GLFW
@@ -322,48 +323,7 @@ int main(void)
 
 	// Get a handle for our "myTextureSampler" uniform
 	GLuint TextureID = glGetUniformLocation(programID, "myTextureSampler");
-
-	cout << 1.0f - 0.000004f << endl;
-	cout << 1.0f - 0.336048f << endl;
-	cout << 1.0f - 0.335903f << endl;
-	cout << 1.0f - 0.000013f << endl;
-	cout << 1.0f - 0.335851f << endl;
-	cout << 1.0f - 0.336064f << endl;
-	cout << 1.0f - 0.335851f << endl;
-	cout << 1.0f - 0.671877f << endl;
-	cout << 1.0f - 0.671889f << endl;
-	cout << 1.0f - 0.000013f << endl;
-
-	cout << 1.0f - 0.000013f << endl;
-	cout << 1.0f - 0.335851f << endl;
-	cout << 1.0f - 0.000004f << endl;
-	cout << 1.0f - 0.335903f << endl;
-	cout << 1.0f - 0.000071f << endl;
-	cout << 1.0f - 0.335851f << endl;
-	cout << 1.0f - 0.335903f << endl;
-	cout << 1.0f - 0.671877f << endl;
-	cout << 1.0f - 0.671847f << endl;
-	cout << 1.0f - 0.336064f << endl;
-	
-	cout << 1.0f - 0.335851f << endl;
-	cout << 1.0f - 0.000013f << endl;
-	cout << 1.0f - 0.335903f << endl;
-	cout << 1.0f - 0.335851f << endl;
-	cout << 1.0f - 0.335903f << endl;
-	cout << 1.0f - 0.000013f << endl;
-	cout << 1.0f - 0.000071f << endl;
-	cout << 1.0f - 0.336048f << endl;
-	cout << 1.0f - 0.671870f << endl;
-	cout << 1.0f - 0.671877f << endl;
-	
-	cout << 1.0f - 0.336048f << endl;
-	cout << 1.0f - 0.671877f << endl;
-	cout << 1.0f - 0.335903f << endl;
-	cout << 1.0f - 0.671889f << endl;
-	cout << 1.0f - 0.671847f << endl;
-	cout << 1.0f - 0.335851f <<endl;
-
-
+	//vs에서 float변수 하나 만들어서 연관짓기??
 	if (read_file.fail() == true)
 	{
 		perror("texture_test.txt를 읽어오지 못했습니다.");
