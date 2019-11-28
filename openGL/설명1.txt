@@ -28,3 +28,11 @@ color가 아웃풋 -> 이게 하나의 픽셀 색상을 결정 -> 모든 픽셀을 계산하면 물체의 색
 
 https://heinleinsgame.tistory.com/15
 https://learnopengl.com/code_viewer.php?code=lighting/basic_lighting-exercise1
+
+=======================================================
+ambient : 물체의 모든 면에 똑같은 양의 빛을 고루 배정한다고 가정하는 빛
+diffuse,  color -> 표면색 결정
+(albedo)
+알파블렌딩->백페이스 컬링 필수 고려
+역방향으로 그려야 뒷면나옴
+앞면 원한다면 시계방향

@@ -349,15 +349,6 @@ int main(void)
 		return -1;
 	}
 
-	//// Ensure we can capture the escape key being pressed below
-	//glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
-	//// Hide the mouse and enable unlimited mouvement
-	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-	//// Set the mouse at the center of the screen
-	//glfwPollEvents();
-	//glfwSetCursorPos(window, 1024 / 2, 768 / 2);
-
 	// Dark blue background
 	glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
 
@@ -367,7 +358,7 @@ int main(void)
 	glDepthFunc(GL_LESS);
 
 	// Cull triangles which normal is not towards the camera
-	glEnable(GL_CULL_FACE);
+	//glEnable(GL_CULL_FACE)
 
 	GLuint VertexArrayID;
 	glGenVertexArrays(1, &VertexArrayID);
@@ -414,6 +405,10 @@ int main(void)
 	glUseProgram(programID);
 	GLuint LightID = glGetUniformLocation(programID, "LightPosition_worldspace");
 
+	// Enable blending
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	do {
 
 		// Clear the screen
@@ -440,9 +435,7 @@ int main(void)
 		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
 
 		glm::vec3 lightPos = glm::vec3(4, 4, 4);
-		lightPos = glm::rotate(lightPos, glm::radians(1.f), glm::vec3(0.f, 3.f, 0.f));
 		glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
-		
 
 		// Bind our texture in Texture Unit 0
 		glActiveTexture(GL_TEXTURE0);
